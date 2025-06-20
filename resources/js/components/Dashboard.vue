@@ -3,13 +3,18 @@
     <h1 class="dashboard__title">Smart Ticket Dashboard</h1>
 
     <div class="dashboard__cards">
-      <div class="dashboard__card" v-for="(value, key) in stats.statusCounts" :key="key">
-        <h3 class="dashboard__card-title">{{ key.replace('_', ' ').toUpperCase() }}</h3>
+      <div class="dashboard__card" v-for="(value, key) in stats.statusCounts" :key="'status-' + key">
+        <h3 class="dashboard__card-title"><i class="pi pi-info-circle"></i> {{ key.replace('_', ' ').toUpperCase() }}</h3>
         <p class="dashboard__card-value">{{ value }}</p>
       </div>
 
-      <div class="dashboard__card" v-for="(value, key) in stats.categoryCounts" :key="key">
-        <h3 class="dashboard__card-title">{{ key ? key.toUpperCase() : 'UNCLASSIFIED' }}</h3>
+    </div>
+
+     <div class="dashboard__cards">
+    
+
+      <div class="dashboard__card" v-for="(value, key) in stats.categoryCounts" :key="'cat-' + key">
+        <h3 class="dashboard__card-title"><i class="pi pi-tag"></i> {{ key ? key.toUpperCase() : 'UNCLASSIFIED' }}</h3>
         <p class="dashboard__card-value">{{ value }}</p>
       </div>
     </div>
@@ -54,7 +59,7 @@ export default {
           datasets: [{
             label: 'Tickets by Category',
             data: Object.values(stats.value.categoryCounts),
-            backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#58D68D', '#AF7AC5', '#F5B041']
+            backgroundColor: ['#C58940', '#E5BA73', '#FAEAB1', '#16a34a', '#FFD600', '#dc2626']
           }]
         },
         options: {
@@ -75,55 +80,110 @@ export default {
 
 <style scoped>
 .dashboard {
-  padding: 2rem;
-  background-color: #f9f9f9;
+  padding: 2rem 0.5rem;
+  background-color: transparent;
   min-height: 100vh;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .dashboard__title {
   font-size: 2rem;
   font-weight: bold;
   margin-bottom: 2rem;
-  color: #333;
+  color: #C58940;
+  text-align: center;
 }
 
 .dashboard__cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 1.5rem;
   margin-bottom: 2rem;
+  padding: 0 1rem;
 }
 
 .dashboard__card {
-  background: #fff;
+  background: linear-gradient(135deg, #FAEAB1 0%, #E5BA73 100%);
   padding: 1.25rem;
-  border-radius: 1rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-radius: 1.2rem;
+  box-shadow: 0 4px 16px rgba(197,137,64,0.10);
   text-align: center;
   transition: 0.3s ease;
+  color: #C58940;
+  font-weight: 700;
 }
 
 .dashboard__card:hover {
   transform: scale(1.03);
+  box-shadow: 0 8px 32px rgba(197,137,64,0.13);
 }
 
 .dashboard__card-title {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #666;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #E5BA73;
   margin-bottom: 0.5rem;
 }
 
 .dashboard__card-value {
-  font-size: 1.5rem;
+  font-size: 1.7rem;
   font-weight: bold;
-  color: #222;
+  color: #C58940;
+}
+
+.dashboard__card-title i {
+  margin-right: 0.5rem;
+  font-size: 1.1rem;
+  vertical-align: middle;
 }
 
 .dashboard__chart {
   background: #fff;
   padding: 2rem;
-  border-radius: 1rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-radius: 1.2rem;
+  box-shadow: 0 4px 16px rgba(197,137,64,0.10);
+  max-height: 30rem;
+  display: flex;
+  justify-content: center;
+}
+
+@media (max-width: 1200px) {
+  .dashboard__cards {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .dashboard__cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .dashboard__title {
+    font-size: 1.3rem;
+  }
+  .dashboard__card {
+    padding: 1rem;
+    border-radius: 0.7rem;
+  }
+  .dashboard__chart {
+    padding: 1rem;
+    border-radius: 0.7rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .dashboard {
+    width: 100%;
+    max-width: 100%;
+  }
+  .dashboard__cards {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    padding: 0;
+  }
+  .dashboard__chart {
+    margin-top: 1rem;
+  }
 }
 </style>

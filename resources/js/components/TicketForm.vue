@@ -29,8 +29,8 @@
           ></textarea>
         </div>
 
-        <button type="submit" class="ticket-form__submit">
-          📩 Submit Ticket
+        <button type="submit" class="btn btn--primary">
+          <i class="pi pi-send"></i> Submit Ticket
         </button>
 
         <p v-if="errorMessage" class="ticket-form__error">
@@ -81,22 +81,22 @@ export default {
 .ticket-form__box {
   max-width: 600px;
   width: 100%;
-  background-color: #ffffff;
-  border-radius: 1rem;
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
-  padding: 2rem;
+  background-color: var(--color-white);
+  border-radius: 1.5rem;
+  box-shadow: 0 10px 24px var(--color-shadow);
+  padding: 2.5rem 2rem;
 }
 
 .ticket-form__title {
-  font-size: 1.75rem;
-  font-weight: 700;
+  font-size: 2rem;
+  font-weight: 800;
   margin-bottom: 0.5rem;
-  color: #1e3a8a;
+  color: var(--color-primary);
 }
 
 .ticket-form__description {
-  font-size: 1rem;
-  color: #555;
+  font-size: 1.1rem;
+  color: var(--color-secondary);
   margin-bottom: 1.5rem;
 }
 
@@ -112,52 +112,69 @@ export default {
 }
 
 .ticket-form__label {
-  font-weight: 600;
+  font-weight: 700;
   margin-bottom: 0.5rem;
-  color: #333;
+  color: var(--color-primary);
 }
 
 .ticket-form__input,
 .ticket-form__textarea {
   padding: 0.75rem 1rem;
-  border: 1px solid #cbd5e0;
-  border-radius: 0.5rem;
+  border: 1.5px solid var(--color-secondary);
+  border-radius: 0.7rem;
   font-size: 1rem;
   outline: none;
+  background: var(--color-accent);
+  color: var(--color-primary);
   transition: border-color 0.3s;
 }
 
 .ticket-form__input:focus,
 .ticket-form__textarea:focus {
-  border-color: #3b82f6;
+  border-color: var(--color-primary);
 }
 
-.ticket-form__submit {
+.btn {
   align-self: flex-start;
-  background-color: #2563eb;
-  color: #fff;
+  background-color: var(--color-primary);
+  color: var(--color-white);
   padding: 0.75rem 1.5rem;
-  border-radius: 0.5rem;
-  font-weight: 600;
+  border-radius: 0.7rem;
+  font-weight: 700;
   font-size: 1rem;
   border: none;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: background-color 0.3s, color 0.3s, box-shadow 0.2s;
+  box-shadow: 0 2px 8px var(--color-shadow);
 }
 
-.ticket-form__submit:hover {
-  background-color: #1d4ed8;
-}
-
-.ticket-form__success {
-  margin-top: 1rem;
-  color: #16a34a;
-  font-weight: 600;
+.btn--primary:hover {
+  background-color: var(--color-secondary);
+  color: var(--color-white);
 }
 
 .ticket-form__error {
   color: #dc2626;
   margin-top: 1rem;
-  font-weight: 600;
+  font-weight: 700;
+  background: #fff0f0;
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+}
+
+.btn i {
+  margin-right: 0.4em;
+  font-size: 1.1em;
+  vertical-align: middle;
+}
+
+@media (max-width: 600px) {
+  .ticket-form__box {
+    padding: 1rem 0.5rem;
+    border-radius: 0.7rem;
+  }
+  .ticket-form__title {
+    font-size: 1.3rem;
+  }
 }
 </style>

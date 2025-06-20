@@ -1,6 +1,11 @@
 <template>
   <div class="ticket-list">
-    <h1 class="ticket-list__heading">All Tickets</h1>
+    <div class="ticket-list__header">
+      <h1 class="ticket-list__heading">All Tickets</h1>
+      <router-link to="/" class="btn btn--primary ticket-list__new-ticket-btn">
+        <i class="pi pi-plus"></i> New Ticket
+      </router-link>
+    </div>
 
     <!-- Filters -->
     <div class="ticket-list__filters">
@@ -29,55 +34,61 @@
     </div>
 
     <!-- Ticket Table -->
-    <table class="ticket-list__table">
-      <thead>
-        <tr>
-          <th>Subject</th>
-          <th>Status</th>
-          <th>Category</th>
-          <th>Confidence</th>
-          <th>Explanation</th>
-          <th>Note</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="ticket in tickets" :key="ticket.id" class="ticket-list__item">
-          <td>{{ ticket.subject }}</td>
-          <td>{{ ticket.status }}</td>
-          <td>
-            <span :class="['ticket-list__category', ticket.category || 'unclassified']">
-              {{ ticket.category || 'Unclassified' }}
-            </span>
-          </td>
-          <td>{{ ticket.confidence ? ticket.confidence.toFixed(2) : '-' }}</td>
-          <td>
-            <span v-if="ticket.explanation" class="ticket-list__info" :title="ticket.explanation">🛈</span>
-            <span v-else>-</span>
-          </td>
-          <td>
-            <span v-if="ticket.note" class="ticket-list__badge">📝</span>
-            <span v-else>-</span>
-          </td>
-          <td>
-            <button
-              class="ticket-list__classify-btn"
-              :disabled="loadingIds.includes(ticket.id)"
-              @click="classify(ticket.id)"
-            >
-              <span v-if="loadingIds.includes(ticket.id)">⏳</span>
-              <span v-else>Classify</span>
-            </button>
-            <router-link :to="'/tickets/' + ticket.id">Details</router-link>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="ticket-list__table-wrapper">
+      <table class="ticket-list__table">
+        <thead>
+          <tr>
+            <th>Subject</th>
+            <th>Status</th>
+            <th>Category</th>
+            <th>Confidence</th>
+            <!-- <th>Explanation</th> -->
+            <th>Note</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="ticket in tickets" :key="ticket.id" class="ticket-list__item">
+            <td>{{ ticket.subject }}</td>
+            <td>
+              <span :class="['badge', 'badge--status', ticket.status]">
+                {{ ticket.status.replace('_', ' ').toUpperCase() }}
+              </span>
+            </td>
+            <td>
+              <span :class="['badge', 'badge--category', ticket.category || 'unclassified']">
+                {{ ticket.category || 'Unclassified' }}
+              </span>
+            </td>
+            <td>{{ ticket.confidence ? ticket.confidence.toFixed(2) : '-' }}</td>
+            <!-- <td>
+              <span v-if="ticket.explanation" class="ticket-list__info" :title="ticket.explanation"><i class="pi pi-info-circle"></i></span>
+              <span v-else>-</span>
+            </td> -->
+            <td>
+              <span v-if="ticket.note" class="ticket-list__badge"> {{ticket.note}}</span>
+              <span v-else>-</span>
+            </td>
+            <td>
+              <button
+                class="btn btn--primary"
+                :disabled="loadingIds.includes(ticket.id)"
+                @click="classify(ticket.id)"
+              >
+                <i v-if="loadingIds.includes(ticket.id)" class="pi pi-spin pi-spinner"></i>
+                <span v-else><i class="pi pi-check"></i> Classify</span>
+              </button>
+              <router-link :to="'/tickets/' + ticket.id" class="btn btn--secondary"><i class="pi pi-search"></i> Details</router-link>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
     <!-- Pagination -->
     <div class="ticket-list__pagination">
-      <button :disabled="!prevUrl" @click="changePage(prevUrl)">Previous</button>
-      <button :disabled="!nextUrl" @click="changePage(nextUrl)">Next</button>
+      <button class="btn btn--secondary" :disabled="!prevUrl" @click="changePage(prevUrl)"><i class="pi pi-angle-left"></i> Previous</button>
+      <button class="btn btn--secondary" :disabled="!nextUrl" @click="changePage(nextUrl)">Next <i class="pi pi-angle-right"></i></button>
     </div>
   </div>
 </template>
@@ -103,26 +114,21 @@ export default {
   },
   methods: {
     async fetchTickets(url = "/api/tickets") {
-
-        if (!url || typeof url !== 'string') {
-            url = "/api/tickets";
-        }
-
+      if (!url || typeof url !== 'string') {
+        url = "/api/tickets";
+      }
       const params = {
         search: this.search,
         status: this.filterStatus,
         category: this.filterCategory === "unclassified" ? "" : this.filterCategory,
       };
-
       const response = await axios.get(url, { params });
-console.log(response);
       this.tickets = response.data.data;
       this.nextUrl = response.data.next_page_url;
       this.prevUrl = response.data.prev_page_url;
     },
     async classify(id) {
       if (this.loadingIds.includes(id)) return;
-
       this.loadingIds.push(id);
       try {
         await axios.post(`/api/tickets/${id}/classify`);
@@ -134,9 +140,8 @@ console.log(response);
       }
     },
     changePage(url) {
-   
-     if (!url || typeof url !== 'string') return;
-        this.fetchTickets(url);
+      if (!url || typeof url !== 'string') return;
+      this.fetchTickets(url);
     },
   },
 };
@@ -144,57 +149,229 @@ console.log(response);
 
 <style scoped>
 .ticket-list {
-  padding: 1rem;
+  padding: 1.5rem 0.5rem;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  color: var(--color-text);
+}
+.ticket-list__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
 }
 .ticket-list__heading {
-  font-size: 1.5rem;
-  margin-bottom: 1rem;
+  font-size: 2rem;
+  font-weight: 800;
+  margin-bottom: 1.5rem;
+  color: var(--color-primary);
+  text-align: center;
 }
 .ticket-list__filters {
   display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  justify-content: center;
 }
 .ticket-list__search,
 .ticket-list__filter {
-  padding: 0.4rem 0.6rem;
+  padding: 0.5rem 1rem;
   font-size: 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--color-secondary);
+  background: var(--color-accent);
+  color: var(--color-primary);
+  outline: none;
+  transition: border 0.2s;
+}
+.ticket-list__search:focus,
+.ticket-list__filter:focus {
+  border: 1.5px solid var(--color-primary);
+}
+.ticket-list__table-wrapper {
+  background: var(--color-white);
+  border-radius: 1.5rem;
+  box-shadow: 0 4px 24px var(--color-shadow);
+  overflow-x: auto;
+  margin-bottom: 1.5rem;
+  max-width: 100vw;
 }
 .ticket-list__table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 700px;
 }
 .ticket-list__table th,
 .ticket-list__table td {
-  padding: 0.6rem;
-  border: 1px solid #ddd;
+  padding: 0.9rem 0.7rem;
+  border-bottom: 1px solid var(--color-accent);
   text-align: left;
+  font-size: 1rem;
 }
-.ticket-list__category.unclassified {
+.ticket-list__table th {
+  background: var(--color-secondary);
+  color: var(--color-white);
+  font-weight: 700;
+}
+.ticket-list__item {
+  transition: background 0.2s;
+}
+.ticket-list__item:hover {
+  background: var(--color-accent);
+}
+.badge {
+  display: inline-block;
+  padding: 0.15em 0.9em;
+  border-radius: 1.5em;
+  font-size: 0.85em;
+  box-shadow: 0 1px 4px var(--color-shadow);
+  margin-right: 0.2em;
+}
+.badge--status.open {
+  background: var(--color-secondary);
+  color: var(--color-white);
+}
+.badge--status.in_progress {
+  background: #FFD600;
+  color: var(--color-primary);
+  width: max-content;
+}
+.badge--status.resolved {
+  background: #16a34a;
+  color: var(--color-white);
+}
+.badge--category.billing {
+  background: var(--color-primary);
+  color: var(--color-white);
+}
+.badge--category.technical {
+  background: var(--color-secondary);
+  color: var(--color-white);
+}
+.badge--category.account {
+  background: var(--color-accent);
+  color: var(--color-primary);
+}
+.badge--category.unclassified {
+  background: #eee;
   color: #aaa;
   font-style: italic;
 }
 .ticket-list__info {
   cursor: help;
-  color: #666;
+  color: var(--color-primary);
+}
+.ticket-list__info i {
+  font-size: 1.1rem;
+  vertical-align: middle;
 }
 .ticket-list__badge {
-  font-size: 1.2rem;
+  font-size: 0.8rem;
 }
-.ticket-list__classify-btn {
-  padding: 0.3rem 0.6rem;
-  background: #007bff;
+.ticket-list__badge i {
+  font-size: 1.1rem;
+  vertical-align: middle;
+}
+.btn {
+  display: inline-block;
+  padding: 0.45rem 1.1rem;
+  border-radius: 8px;
+  font-size: 1rem;
   border: none;
-  color: white;
   cursor: pointer;
+  margin: 0.1rem 0.2rem;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 8px var(--color-shadow);
 }
-.ticket-list__classify-btn:disabled {
-  background: #aaa;
+.btn--primary {
+  background: var(--color-primary);
+  color: var(--color-white);
+  width: 122px;
+  height: 42px;
+}
+.btn--primary:disabled {
+  background: var(--color-secondary);
+  color: var(--color-white);
   cursor: wait;
+}
+.btn--primary:hover:not(:disabled) {
+  background: var(--color-secondary);
+  color: var(--color-white);
+}
+.btn--secondary {
+  background: var(--color-accent);
+  color: var(--color-primary);
+  border: 1.5px solid var(--color-secondary);
+  text-decoration: none;
+}
+.btn--secondary:hover:not(:disabled) {
+  background: var(--color-secondary);
+  color: var(--color-white);
+}
+.btn--secondary i {
+  margin-left: 0.4em;
+  font-size: 1.1em;
+  vertical-align: middle;
 }
 .ticket-list__pagination {
   margin-top: 1rem;
   display: flex;
   gap: 1rem;
+  justify-content: center;
+}
+.ticket-list__new-ticket-btn {
+  font-size: 1rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 42px;
+  padding: 0 1.2rem;
+  text-decoration: none;
+}
+@media (max-width: 900px) {
+  .ticket-list__table-wrapper {
+    border-radius: 1rem;
+  }
+  .ticket-list__heading {
+    font-size: 1.3rem;
+  }
+}
+@media (max-width: 600px) {
+  .ticket-list__table-wrapper {
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 8px var(--color-shadow);
+    max-width: 100vw;
+    overflow-x: auto;
+  }
+  .ticket-list__table th,
+  .ticket-list__table td {
+    padding: 0.5rem 0.3rem;
+    font-size: 0.95rem;
+  }
+  .ticket-list__filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .ticket-list__scroll-hint {
+    text-align: center;
+    font-size: 0.9rem;
+    color: var(--color-primary);
+    margin-bottom: 0.5rem;
+    margin-top: -1rem;
+  }
+  .ticket-list__header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.7rem;
+  }
+  .ticket-list__new-ticket-btn {
+    width: 100%;
+    justify-content: center;
+  }
 }
 </style>
