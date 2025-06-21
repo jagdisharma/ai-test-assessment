@@ -9,7 +9,7 @@
     </button>
     <button class="theme-toggle" @click="toggleTheme">
       <i :class="theme === 'dark' ? 'pi pi-sun' : 'pi pi-moon'"></i>
-      {{ theme === 'dark' ? 'Light' : 'Dark' }} Mode
+      <!-- {{ theme === 'dark' ? 'Light' : 'Dark' }} Mode -->
     </button>
     <Sidebar
       v-if="showSidebar"
@@ -82,7 +82,7 @@ export default {
   border: none;
   border-radius: 12px;
   font-size: 1rem;
-  padding: 0.5rem 1.2rem;
+  padding: 0.8rem;
   display: flex;
   align-items: center;
   gap: 0.5rem;

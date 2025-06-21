@@ -6,6 +6,14 @@
         <div v-if="unclassifiedCount > 0" class="ticket-list__unclassified-info">
           <span class="ticket-list__unclassified-count">{{ unclassifiedCount }} tickets need classification</span>
         </div>
+        <!-- <div v-if="queueStatus" class="ticket-list__queue-status">
+          <span :class="['queue-indicator', queueStatus.queue_working ? 'queue-working' : 'queue-idle']">
+            <i :class="queueStatus.queue_working ? 'pi pi-check-circle' : 'pi pi-exclamation-triangle'"></i>
+            {{ queueStatus.queue_working ? 'Queue Active' : 'Queue Idle' }}
+            <span v-if="queueStatus.pending_jobs > 0">({{ queueStatus.pending_jobs }} pending)</span>
+            <span v-if="queueStatus.failed_jobs > 0" class="failed-jobs">({{ queueStatus.failed_jobs }} failed)</span>
+          </span>
+        </div> -->
       </div>
       <div class="ticket-list__header-actions">
         <button 
@@ -126,11 +134,17 @@ export default {
       loadingIds: [],
       unclassifiedCount: 0,
       bulkLoading: false,
+      pollingIntervals: {},
+      queueStatus: null,
     };
   },
   created() {
     this.fetchTickets();
     this.fetchStats();
+    this.fetchQueueStatus();
+  },
+  beforeUnmount() {
+    this.clearAllPolling();
   },
   methods: {
     async fetchTickets(url = "/api/tickets") {
@@ -140,7 +154,7 @@ export default {
       const params = {
         search: this.search,
         status: this.filterStatus,
-        category: this.filterCategory === "unclassified" ? "" : this.filterCategory,
+        category: this.filterCategory,
       };
       const response = await axios.get(url, { params });
       this.tickets = response.data.data;
@@ -155,17 +169,66 @@ export default {
         console.error('Failed to fetch stats:', err);
       }
     },
+    async fetchQueueStatus() {
+      try {
+        const response = await axios.get('/api/queue-status');
+        this.queueStatus = response.data;
+      } catch (err) {
+        console.error('Failed to fetch queue status:', err);
+      }
+    },
     async classify(id) {
       if (this.loadingIds.includes(id)) return;
       this.loadingIds.push(id);
+      
       try {
-        await axios.post(`/api/tickets/${id}/classify`);
-        await this.fetchTickets();
+        const response = await axios.post(`/api/tickets/${id}/classify`);
+        
+        if (response.data.status === 'queued') {
+          this.startPollingForTicket(id);
+        } else {
+          throw new Error(response.data.message || 'Classification failed');
+        }
       } catch (err) {
-        alert("Failed to classify ticket.");
-      } finally {
+        console.error('Classification error:', err);
+        alert(`Failed to classify ticket: ${err.response?.data?.message || err.message}`);
         this.loadingIds = this.loadingIds.filter((tid) => tid !== id);
       }
+    },
+    async checkTicketStatus(id) {
+      try {
+        const response = await axios.get(`/api/tickets/${id}/classification-status`);
+        const ticketData = response.data;
+        
+        if (ticketData.is_classified) {
+          this.stopPollingForTicket(id);
+          this.loadingIds = this.loadingIds.filter((tid) => tid !== id);
+          await this.fetchTickets();
+          await this.fetchStats();
+        }
+      } catch (err) {
+        console.error('Status check error:', err);
+        this.stopPollingForTicket(id);
+        this.loadingIds = this.loadingIds.filter((tid) => tid !== id);
+        alert('Failed to check classification status');
+      }
+    },
+    startPollingForTicket(id) {
+      this.stopPollingForTicket(id);
+      this.pollingIntervals[id] = setInterval(() => {
+        this.checkTicketStatus(id);
+      }, 2000);
+    },
+    stopPollingForTicket(id) {
+      if (this.pollingIntervals[id]) {
+        clearInterval(this.pollingIntervals[id]);
+        delete this.pollingIntervals[id];
+      }
+    },
+    clearAllPolling() {
+      Object.keys(this.pollingIntervals).forEach(id => {
+        this.stopPollingForTicket(id);
+      });
     },
     changePage(url) {
       if (!url || typeof url !== 'string') return;
@@ -174,11 +237,20 @@ export default {
     async bulkClassify() {
       this.bulkLoading = true;
       try {
-        await axios.post('/api/tickets/bulk-classify');
-        await this.fetchTickets();
-        await this.fetchStats();
+        const response = await axios.post('/api/tickets/bulk-classify');
+        
+        if (response.data.status === 'queued') {
+          alert(`Bulk classification queued for ${response.data.tickets_queued} tickets. They will be processed in the background.`);
+          await this.fetchTickets();
+          await this.fetchStats();
+        } else if (response.data.status === 'no_tickets') {
+          alert('No unclassified tickets found to process.');
+        } else {
+          throw new Error(response.data.message || 'Bulk classification failed');
+        }
       } catch (err) {
-        alert("Failed to bulk classify tickets.");
+        console.error('Bulk classification error:', err);
+        alert(`Failed to bulk classify tickets: ${err.response?.data?.message || err.message}`);
       } finally {
         this.bulkLoading = false;
       }
@@ -420,6 +492,38 @@ export default {
   margin-right: 0.4em;
   font-size: 1.1em;
   vertical-align: middle;
+}
+.ticket-list__queue-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.queue-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 1.5em;
+  border: 1px solid var(--color-secondary);
+  background: var(--color-accent);
+}
+.queue-indicator i {
+  font-size: 1.2rem;
+  vertical-align: middle;
+}
+.queue-working {
+  background: #16a34a;
+  color: var(--color-white);
+}
+.queue-idle {
+  background: #FFD600;
+  color: var(--color-primary);
+}
+.failed-jobs {
+  background: #FF0000;
+  color: var(--color-white);
+  padding: 0.2rem 0.5rem;
+  border-radius: 1.5em;
 }
 @media (max-width: 900px) {
   .ticket-list__table-wrapper {

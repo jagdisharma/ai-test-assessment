@@ -26,18 +26,13 @@ class TicketController extends Controller
             $query->where('status', $status);
         }
 
-        if ($category = $request->input('category')) {
-            $query->where('category', $category);
+        if ($request->filled('category')) {
+            if ($request->input('category') === 'unclassified') {
+                $query->whereNull('category'); 
+            } else {
+                $query->where('category', $request->input('category'));
+            }
         }
-
-       if ($request->filled('category')) {
-    if ($request->input('category') === 'unclassified') {
-        $query->whereNull('category'); 
-    } else {
-        $query->where('category', $request->input('category'));
-    }
-    }
-
 
         return response()->json($query->latest()->paginate(10));
     }
@@ -79,22 +74,24 @@ class TicketController extends Controller
 
     public function classify(Ticket $ticket)
     {
-        
-        // // Temporary fake data for now
-        // $ticket = Ticket::findOrFail($id);
+        try {
+            ClassifyTicket::dispatch($ticket);
+            return response()->json(['status' => 'queued', 'message' => 'Classification job queued successfully']);
+        } catch (\Exception $e) {
+            return response()->json(['status' => 'error', 'message' => 'Failed to queue classification job'], 500);
+        }
+    }
 
-        // $fake = fake();
-        // $ticket->update([
-        //     'category' => $ticket->category ?? $fake->randomElement(['billing', 'technical', 'account']),
-        //     'explanation' => 'Dummy classification used for development.',
-        //     'confidence' => $fake->randomFloat(2, 0.6, 0.99),
-        // ]);
-
-        // return response()->json($ticket);
-
-        $res = ClassifyTicket::dispatch($ticket);
-        
-        return response()->json(['status' => 'queued']);
+    public function checkClassificationStatus($id)
+    {
+        $ticket = Ticket::findOrFail($id);
+        return response()->json([
+            'id' => $ticket->id,
+            'category' => $ticket->category,
+            'confidence' => $ticket->confidence,
+            'explanation' => $ticket->explanation,
+            'is_classified' => !is_null($ticket->category)
+        ]);
     }
 
     public function stats()
@@ -108,15 +105,54 @@ class TicketController extends Controller
 
     public function bulkClassify()
     {
-        $tickets = Ticket::whereNull('category')->get();
+        try {
+            $tickets = Ticket::whereNull('category')->get();
 
-        foreach ($tickets as $ticket) {
-            ClassifyTicket::dispatch($ticket);
+            if ($tickets->isEmpty()) {
+                return response()->json([
+                    'status' => 'no_tickets',
+                    'message' => 'No unclassified tickets found'
+                ]);
+            }
+
+            foreach ($tickets as $ticket) {
+                ClassifyTicket::dispatch($ticket);
+            }
+
+            return response()->json([
+                'status' => 'queued',
+                'tickets_queued' => $tickets->count(),
+                'message' => "Queued {$tickets->count()} tickets for classification"
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Bulk classification failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to queue bulk classification jobs'
+            ], 500);
         }
+    }
 
-        return response()->json([
-            'status' => 'queued',
-            'tickets_queued' => $tickets->count()
-        ]);
+    public function queueStatus()
+    {
+        try {
+            $pendingJobs = \DB::table('jobs')->count();
+            $failedJobs = \DB::table('failed_jobs')->count();
+            
+            return response()->json([
+                'pending_jobs' => $pendingJobs,
+                'failed_jobs' => $failedJobs,
+                'queue_working' => $pendingJobs > 0 || $failedJobs > 0
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Failed to check queue status',
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 }

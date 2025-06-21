@@ -29,19 +29,37 @@ class ClassifyTicket implements ShouldQueue
      */
     public function handle(): void
     {
-        $classifier = new TicketClassifier();
+        try {
+            $classifier = new TicketClassifier();
+            $result = $classifier->classify($this->ticket->subject, $this->ticket->body);
 
-        $result = $classifier->classify($this->ticket->subject, $this->ticket->body);
+            if (!isset($result['category']) || !isset($result['confidence'])) {
+                throw new \Exception('Invalid classification result format');
+            }
 
-       
-        if (is_null($this->ticket->category)) {
-            $this->ticket->category = $result['category'];
+            if (is_null($this->ticket->category)) {
+                $this->ticket->category = $result['category'];
+            }
+
+            $this->ticket->explanation = $result['explanation'] ?? 'No explanation provided';
+            $this->ticket->confidence = $result['confidence'];
+
+            $this->ticket->save();
+            
+            \Log::info('Ticket classified successfully', [
+                'ticket_id' => $this->ticket->id,
+                'category' => $this->ticket->category,
+                'confidence' => $this->ticket->confidence
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error('Ticket classification failed', [
+                'ticket_id' => $this->ticket->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            throw $e;
         }
-
-        $this->ticket->explanation = $result['explanation'];
-        $this->ticket->confidence = $result['confidence'];
-
-        $this->ticket->save();
-       
     }
 }
