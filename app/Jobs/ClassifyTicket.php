@@ -33,6 +33,7 @@ class ClassifyTicket implements ShouldQueue
 
         $result = $classifier->classify($this->ticket->subject, $this->ticket->body);
 
+       
         if (is_null($this->ticket->category)) {
             $this->ticket->category = $result['category'];
         }

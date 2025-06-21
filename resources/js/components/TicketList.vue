@@ -1,10 +1,26 @@
 <template>
   <div class="ticket-list">
     <div class="ticket-list__header">
-      <h1 class="ticket-list__heading">All Tickets</h1>
-      <router-link to="/" class="btn btn--primary ticket-list__new-ticket-btn">
-        <i class="pi pi-plus"></i> New Ticket
-      </router-link>
+      <div class="ticket-list__header-left">
+        <h1 class="ticket-list__heading">All Tickets</h1>
+        <div v-if="unclassifiedCount > 0" class="ticket-list__unclassified-info">
+          <span class="ticket-list__unclassified-count">{{ unclassifiedCount }} tickets need classification</span>
+        </div>
+      </div>
+      <div class="ticket-list__header-actions">
+        <button 
+          v-if="unclassifiedCount > 0"
+          class="btn btn--secondary ticket-list__bulk-btn"
+          :disabled="bulkLoading"
+          @click="bulkClassify"
+        >
+          <i v-if="bulkLoading" class="pi pi-spin pi-spinner"></i>
+          <span v-else><i class="pi pi-check-square"></i> Bulk Classify</span>
+        </button>
+        <router-link to="/" class="btn btn--primary ticket-list__new-ticket-btn">
+          <i class="pi pi-plus"></i> New Ticket
+        </router-link>
+      </div>
     </div>
 
     <!-- Filters -->
@@ -72,10 +88,11 @@
             <td>
               <button
                 class="btn btn--primary"
-                :disabled="loadingIds.includes(ticket.id)"
+                :disabled="loadingIds.includes(ticket.id) || (ticket.category && ticket.category !== 'unclassified')"
                 @click="classify(ticket.id)"
               >
                 <i v-if="loadingIds.includes(ticket.id)" class="pi pi-spin pi-spinner"></i>
+                <i v-else-if="ticket.category && ticket.category !== 'unclassified'" class="pi pi-check tick-icon"></i>
                 <span v-else><i class="pi pi-check"></i> Classify</span>
               </button>
               <router-link :to="'/tickets/' + ticket.id" class="btn btn--secondary"><i class="pi pi-search"></i> Details</router-link>
@@ -107,10 +124,13 @@ export default {
       nextUrl: null,
       prevUrl: null,
       loadingIds: [],
+      unclassifiedCount: 0,
+      bulkLoading: false,
     };
   },
   created() {
     this.fetchTickets();
+    this.fetchStats();
   },
   methods: {
     async fetchTickets(url = "/api/tickets") {
@@ -127,6 +147,14 @@ export default {
       this.nextUrl = response.data.next_page_url;
       this.prevUrl = response.data.prev_page_url;
     },
+    async fetchStats() {
+      try {
+        const response = await axios.get('/api/stats');
+        this.unclassifiedCount = response.data.unclassified_count || 0;
+      } catch (err) {
+        console.error('Failed to fetch stats:', err);
+      }
+    },
     async classify(id) {
       if (this.loadingIds.includes(id)) return;
       this.loadingIds.push(id);
@@ -142,6 +170,18 @@ export default {
     changePage(url) {
       if (!url || typeof url !== 'string') return;
       this.fetchTickets(url);
+    },
+    async bulkClassify() {
+      this.bulkLoading = true;
+      try {
+        await axios.post('/api/tickets/bulk-classify');
+        await this.fetchTickets();
+        await this.fetchStats();
+      } catch (err) {
+        alert("Failed to bulk classify tickets.");
+      } finally {
+        this.bulkLoading = false;
+      }
     },
   },
 };
@@ -160,6 +200,17 @@ export default {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+.ticket-list__header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.ticket-list__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
   flex-wrap: wrap;
 }
 .ticket-list__heading {
@@ -276,6 +327,10 @@ export default {
   font-size: 1.1rem;
   vertical-align: middle;
 }
+.tick-icon {
+  color: #16a34a;
+  font-size: 1.2rem;
+}
 .btn {
   display: inline-block;
   padding: 0.45rem 1.1rem;
@@ -333,6 +388,39 @@ export default {
   padding: 0 1.2rem;
   text-decoration: none;
 }
+.ticket-list__unclassified-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.ticket-list__unclassified-count {
+  font-size: 0.8rem;
+  color: var(--color-white);
+  background: #16a34a;
+  padding: 0.2rem 0.5rem;
+  border-radius: 1.5em;
+  border-radius: 20px;
+}
+.ticket-list__bulk-btn {
+  background: var(--color-accent);
+  color: var(--color-primary);
+  border: 1.5px solid var(--color-secondary);
+  text-decoration: none;
+}
+.ticket-list__bulk-btn:hover:not(:disabled) {
+  background: var(--color-secondary);
+  color: var(--color-white);
+}
+.ticket-list__bulk-btn:disabled {
+  background: var(--color-secondary);
+  color: var(--color-white);
+  cursor: wait;
+}
+.ticket-list__bulk-btn i {
+  margin-right: 0.4em;
+  font-size: 1.1em;
+  vertical-align: middle;
+}
 @media (max-width: 900px) {
   .ticket-list__table-wrapper {
     border-radius: 1rem;
@@ -369,7 +457,18 @@ export default {
     align-items: stretch;
     gap: 0.7rem;
   }
+  .ticket-list__header-left {
+    text-align: center;
+  }
+  .ticket-list__header-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
   .ticket-list__new-ticket-btn {
+    width: 100%;
+    justify-content: center;
+  }
+  .ticket-list__bulk-btn {
     width: 100%;
     justify-content: center;
   }

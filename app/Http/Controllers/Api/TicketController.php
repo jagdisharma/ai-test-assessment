@@ -79,6 +79,7 @@ class TicketController extends Controller
 
     public function classify(Ticket $ticket)
     {
+        
         // // Temporary fake data for now
         // $ticket = Ticket::findOrFail($id);
 
@@ -91,7 +92,8 @@ class TicketController extends Controller
 
         // return response()->json($ticket);
 
-        ClassifyTicket::dispatch($ticket);
+        $res = ClassifyTicket::dispatch($ticket);
+        
         return response()->json(['status' => 'queued']);
     }
 
@@ -100,6 +102,21 @@ class TicketController extends Controller
         return response()->json([
             'status_counts' => Ticket::selectRaw('status, count(*) as count')->groupBy('status')->pluck('count', 'status'),
             'category_counts' => Ticket::selectRaw('category, count(*) as count')->groupBy('category')->pluck('count', 'category'),
+            'unclassified_count' => Ticket::whereNull('category')->count(),
+        ]);
+    }
+
+    public function bulkClassify()
+    {
+        $tickets = Ticket::whereNull('category')->get();
+
+        foreach ($tickets as $ticket) {
+            ClassifyTicket::dispatch($ticket);
+        }
+
+        return response()->json([
+            'status' => 'queued',
+            'tickets_queued' => $tickets->count()
         ]);
     }
 }

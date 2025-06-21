@@ -10,6 +10,7 @@ Route::prefix('tickets')->group(function () {
     Route::get('{id}', [TicketController::class, 'show']); 
     Route::patch('{id}', [TicketController::class, 'update']); 
     Route::post('{ticket}/classify', [TicketController::class, 'classify']); 
+    Route::post('bulk-classify', [TicketController::class, 'bulkClassify']); 
 });
 
 Route::get('/stats', [TicketController::class, 'stats']);

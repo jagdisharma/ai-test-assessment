@@ -84,7 +84,7 @@ export default {
   font-weight: 800;
   padding: 2rem 1.5rem 1.5rem 1.5rem;
   letter-spacing: 1px;
-  color: var(--color-accent);
+  color: var(--color-black);
   display: flex;
   align-items: center;
   gap: 0.5rem;
