@@ -12,7 +12,7 @@ use Illuminate\Queue\SerializesModels;
 
 class ClassifyTicket implements ShouldQueue
 {
-     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public Ticket $ticket;
 

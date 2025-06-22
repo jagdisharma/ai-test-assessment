@@ -30,8 +30,8 @@ class TicketClassifier
                 'confidence' => round(rand(60, 99) / 100, 2),
             ];
         }
-
-        if (!config('openai.api_key')) {
+        
+        if (!$this->apiKey) {
             \Log::error('OpenAI API key not configured');
             throw new \Exception('OpenAI API key not configured');
         }
@@ -44,8 +44,7 @@ class TicketClassifier
                 3. confidence – a decimal between 0 and 1 indicating how confident you are in this classification.
                 
                 Respond only with valid JSON.";
-                
-
+              
             $response = OpenAI::chat()->create([
                 'model' => 'gpt-4o',
                 'messages' => [
@@ -55,9 +54,17 @@ class TicketClassifier
                 'temperature' => 0.1,
                 'max_tokens' => 200,
             ]);
-
+           
             $content = $response->choices[0]->message->content;
-            $result = json_decode($content, true);
+
+            // Step 1: Clean formatting
+            $cleanJson = trim($content);
+            $cleanJson = preg_replace('/^"""\s*/', '', $cleanJson);        // remove starting triple quotes
+            $cleanJson = preg_replace('/\s*"""$/', '', $cleanJson);        // remove ending triple quotes
+            $cleanJson = preg_replace('/```json|```/', '', $cleanJson);    // remove markdown ```json and ```
+            $cleanJson = trim($cleanJson);
+
+            $result = json_decode($cleanJson, true);
 
             if (json_last_error() !== JSON_ERROR_NONE) {
                 throw new \Exception('Invalid JSON response from OpenAI: ' . json_last_error_msg());
