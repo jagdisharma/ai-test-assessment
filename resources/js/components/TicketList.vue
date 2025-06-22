@@ -16,6 +16,9 @@
         </div> -->
       </div>
       <div class="ticket-list__header-actions">
+        <a href="/api/tickets/export" class="btn btn--secondary btn--export">
+          <i class="pi pi-download"></i> Export CSV
+        </a>
         <button 
           v-if="unclassifiedCount > 0"
           class="btn btn--secondary ticket-list__bulk-btn"
@@ -66,7 +69,7 @@
             <th>Status</th>
             <th>Category</th>
             <th>Confidence</th>
-            <!-- <th>Explanation</th> -->
+            <th>Explanation</th>
             <th>Note</th>
             <th>Actions</th>
           </tr>
@@ -85,12 +88,20 @@
               </span>
             </td>
             <td>{{ ticket.confidence ? ticket.confidence.toFixed(2) : '-' }}</td>
-            <!-- <td>
-              <span v-if="ticket.explanation" class="ticket-list__info" :title="ticket.explanation"><i class="pi pi-info-circle"></i></span>
-              <span v-else>-</span>
-            </td> -->
             <td>
-              <span v-if="ticket.note" class="ticket-list__badge"> {{ticket.note}}</span>
+              <span v-if="ticket.explanation" class="ticket-list__info" 
+                    @mouseenter="showTooltip($event, ticket.explanation)" 
+                    @mouseleave="hideTooltip">
+                <i class="pi pi-info-circle"></i>
+              </span>
+              <span v-else>-</span>
+            </td>
+            <td>
+              <span v-if="ticket.note" class="badge badge--note" 
+                    @mouseenter="showTooltip($event, ticket.note)" 
+                    @mouseleave="hideTooltip">
+                 Note
+              </span>
               <span v-else>-</span>
             </td>
             <td>
@@ -115,6 +126,11 @@
       <button class="btn btn--secondary" :disabled="!prevUrl" @click="changePage(prevUrl)"><i class="pi pi-angle-left"></i> Previous</button>
       <button class="btn btn--secondary" :disabled="!nextUrl" @click="changePage(nextUrl)">Next <i class="pi pi-angle-right"></i></button>
     </div>
+
+    <!-- Custom Tooltip -->
+    <div v-if="tooltip" class="custom-tooltip" ref="tooltip">
+      {{ tooltip }}
+    </div>
   </div>
 </template>
 
@@ -136,6 +152,7 @@ export default {
       bulkLoading: false,
       pollingIntervals: {},
       queueStatus: null,
+      tooltip: null,
     };
   },
   created() {
@@ -254,6 +271,33 @@ export default {
       } finally {
         this.bulkLoading = false;
       }
+    },
+    showTooltip(event, text) {
+      this.tooltip = text;
+      this.$nextTick(() => {
+        if (this.$refs.tooltip) {
+          const tooltip = this.$refs.tooltip;
+          const rect = event.target.getBoundingClientRect();
+          const tooltipRect = tooltip.getBoundingClientRect();
+          
+          let left = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
+          let top = rect.top - tooltipRect.height - 10;
+          
+          if (left < 10) left = 10;
+          if (left + tooltipRect.width > window.innerWidth - 10) {
+            left = window.innerWidth - tooltipRect.width - 10;
+          }
+          if (top < 10) {
+            top = rect.bottom + 10;
+          }
+          
+          tooltip.style.left = left + 'px';
+          tooltip.style.top = top + 'px';
+        }
+      });
+    },
+    hideTooltip() {
+      this.tooltip = null;
     },
   },
 };
@@ -384,6 +428,11 @@ export default {
   color: #aaa;
   font-style: italic;
 }
+.badge--note {
+  background: #FFD600;
+  color: var(--color-primary);
+  cursor: help;
+}
 .ticket-list__info {
   cursor: help;
   color: var(--color-primary);
@@ -443,6 +492,9 @@ export default {
   margin-left: 0.4em;
   font-size: 1.1em;
   vertical-align: middle;
+}
+.btn--export i {
+  margin-right: 0.4em;
 }
 .ticket-list__pagination {
   margin-top: 1rem;
@@ -524,6 +576,28 @@ export default {
   color: var(--color-white);
   padding: 0.2rem 0.5rem;
   border-radius: 1.5em;
+}
+.custom-tooltip {
+  position: fixed;
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  max-width: 300px;
+  word-wrap: break-word;
+  z-index: 1000;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+.custom-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: rgba(0, 0, 0, 0.9);
 }
 @media (max-width: 900px) {
   .ticket-list__table-wrapper {

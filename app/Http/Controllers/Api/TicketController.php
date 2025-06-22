@@ -8,6 +8,7 @@ use App\Models\Ticket;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Str;
 use App\Jobs\ClassifyTicket;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class TicketController extends Controller
 {
@@ -154,5 +155,51 @@ class TicketController extends Controller
                 'message' => $e->getMessage()
             ], 500);
         }
+    }
+
+    public function exportCsv()
+    {
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="tickets.csv"',
+        ];
+
+        $callback = function () {
+            $handle = fopen('php://output', 'w');
+
+            fputcsv($handle, [
+                'ID',
+                'Subject',
+                'Body',
+                'Status',
+                'Category',
+                'Note',
+                'Explanation',
+                'Confidence',
+                'Created At',
+                'Updated At',
+            ]);
+
+            Ticket::chunk(200, function ($tickets) use ($handle) {
+                foreach ($tickets as $ticket) {
+                    fputcsv($handle, [
+                        $ticket->id,
+                        $ticket->subject,
+                        $ticket->body,
+                        $ticket->status,
+                        $ticket->category ?? 'UNCLASSIFIED',
+                        $ticket->note,
+                        $ticket->explanation,
+                        $ticket->confidence,
+                        $ticket->created_at,
+                        $ticket->updated_at,
+                    ]);
+                }
+            });
+
+            fclose($handle);
+        };
+
+        return new StreamedResponse($callback, 200, $headers);
     }
 }

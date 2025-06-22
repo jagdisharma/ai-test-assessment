@@ -2,7 +2,9 @@
   <div class="dashboard">
     <h1 class="dashboard__title">Smart Ticket Dashboard</h1>
 
+  <h2 class="dashboard__cards-heading">Tickets per status </h2>
     <div class="dashboard__cards">
+    
       <div class="dashboard__card" v-for="(value, key) in stats.statusCounts" :key="'status-' + key">
         <h3 class="dashboard__card-title"><i class="pi pi-info-circle"></i> {{ key.replace('_', ' ').toUpperCase() }}</h3>
         <p class="dashboard__card-value">{{ value }}</p>
@@ -10,9 +12,9 @@
 
     </div>
 
+ <h2 class="dashboard__cards-heading" >Tickets per category </h2>
      <div class="dashboard__cards">
-    
-
+     
       <div class="dashboard__card" v-for="(value, key) in stats.categoryCounts" :key="'cat-' + key">
         <h3 class="dashboard__card-title"><i class="pi pi-tag"></i> {{ key ? key.toUpperCase() : 'UNCLASSIFIED' }}</h3>
         <p class="dashboard__card-value">{{ value }}</p>
@@ -55,7 +57,7 @@ export default {
       chartInstance = new Chart(chartCanvas.value, {
         type: 'pie',
         data: {
-          labels: Object.keys(stats.value.categoryCounts),
+          labels: Object.keys(stats.value.categoryCounts).map(key => key || 'Unslassified'),
           datasets: [{
             label: 'Tickets by Category',
             data: Object.values(stats.value.categoryCounts),
@@ -148,6 +150,11 @@ export default {
   display: flex;
   justify-content: center;
 }
+
+.dashboard__cards-title {
+    font-size: 1rem;
+    font-weight: bold;
+  }
 
 @media (max-width: 1200px) {
   .dashboard__cards {
