@@ -75,7 +75,13 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="ticket in tickets" :key="ticket.id" class="ticket-list__item">
+          <tr v-if="tickets.length === 0">
+            <td colspan="7" class="ticket-list__no-results">
+              <i class="pi pi-inbox"></i>
+              No tickets found.
+            </td>
+          </tr>
+          <tr v-else v-for="ticket in tickets" :key="ticket.id" class="ticket-list__item">
             <td>{{ ticket.subject }}</td>
             <td>
               <span :class="['badge', 'badge--status', ticket.status]">
@@ -389,6 +395,17 @@ export default {
 }
 .ticket-list__item:hover {
   background: var(--color-accent);
+}
+.ticket-list__no-results {
+  text-align: center !important;
+  padding: 2rem !important;
+  font-size: 1.1rem  !important;
+  color: var(--color-secondary);
+}
+.ticket-list__no-results i {
+  display: block;
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
 }
 .badge {
   display: inline-block;
