@@ -16,8 +16,6 @@ class TicketController extends Controller
     {
         $query = Ticket::query();
 
-        // dd($request->all());
-
         if ($search = $request->input('search')) {
             $query->where('subject', 'like', "%{$search}%")
                   ->orWhere('body', 'like', "%{$search}%");

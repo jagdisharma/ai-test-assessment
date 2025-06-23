@@ -2,9 +2,10 @@
   <div>
     <div v-if="visible && isMobile" class="sidebar__overlay" @click="$emit('close')"></div>
     <nav :class="['sidebar', { 'sidebar--visible': visible }]">
-      <div class="sidebar__logo">
+      <div class="sidebar__logo" @click="$router.push('/')">
         <i class="pi pi-ticket"></i>
-        <span>SmartTicket</span></div>
+        <span>SmartTicket</span>
+      </div>
       <ul class="sidebar__menu">
         <li class="sidebar__item">
           <router-link class="sidebar__link" to="/dashboard"><i class="pi pi-home"></i> Dashboard</router-link>
@@ -88,6 +89,7 @@ export default {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  cursor: pointer;
 }
 .sidebar__logo span {
   color: var(--color-black);
